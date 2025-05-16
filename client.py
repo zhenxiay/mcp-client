@@ -108,28 +108,19 @@ class MCPClient:
         print("Type your queries or 'quit' to exit.")
 
         while True:
-            query = input("\nQuery: ").strip()
+            try:
+                query = input("\nQuery: ").strip()
                 
-            if query.lower() == 'quit':
-                break
+                if query.lower() == 'quit':
+                    break
                     
-            response, available_tools, output = await self.process_query(query)
-            print("\n" + response)
-            print(available_tools)
-            print(output)
-       
-        #while True:
-        #    try:
-        #        query = input("\nQuery: ").strip()
-        #        
-        #        if query.lower() == 'quit':
-        #            break
-        #            
-        #        response = await self.process_query(query)
-        #        print("\n" + response)
-        #            
-        #    except Exception as e:
-        #        print(f"\nError: {str(e)}")
+                response, available_tools, output = await self.process_query(query)
+                print("\n" + response)
+                print(available_tools)
+                print(output)
+                
+            except Exception as e:
+                print(f"\nError: {str(e)}")
     
     async def cleanup(self):
         """Clean up resources"""
