@@ -86,11 +86,19 @@ class MCPClient:
             result = await self.session.call_tool(tool_name, tool_args)
             final_text.append(f"[Calling tool {tool_name} with args {tool_args}]")
             
+            # Append the tool call to the messages
             messages.append({
                 "type": "function_call_output",
                 "call_id": tool_call.call_id,
                 "output": str(result)
             })
+            
+           # Final Open AI API call to get the natural language response
+            response = self.openai_agent.responses.create(
+                       model="gpt-4.1",
+                       input=messages,
+                       tools=available_tools,
+                       )
 
         return "\n".join(final_text), available_tools, response.output
 
