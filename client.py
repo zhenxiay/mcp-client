@@ -92,7 +92,7 @@ class MCPClient:
                 "output": str(result)
             })
 
-        return "\n".join(final_text)
+        return "\n".join(final_text), available_tools, response.output
 
     async def chat_loop(self):
         """Run an interactive chat loop"""
@@ -105,8 +105,10 @@ class MCPClient:
             if query.lower() == 'quit':
                 break
                     
-            response = await self.process_query(query)
+            response, available_tools, output = await self.process_query(query)
             print("\n" + response)
+            print(available_tools)
+            print(output)
        
         #while True:
         #    try:
