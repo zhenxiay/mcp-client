@@ -55,6 +55,7 @@ class MCPClient:
             }
         ]
 
+        # Get a list of available tools from the server
         response = await self.session.list_tools()
         available_tools = [{ 
             "name": tool.name,
@@ -86,13 +87,16 @@ class MCPClient:
 
             final_text.append(f"{str(result)} \n")
 
+            # Append the tool call and result to the messages
             messages.append(tool_call)
+
             messages.append({
                 "type": "function_call_output",
                 "call_id": tool_call.call_id,
                 "output": str(result)
             })
 
+            # Get final response from LLM based on the result
             response_natural_text = self.openai_agent.responses.create(
                 model="gpt-4.1",
                 tools=available_tools,
