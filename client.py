@@ -17,12 +17,6 @@ class MCPClient:
         self.exit_stack = AsyncExitStack()
         self.openai_agent = OpenAI()
 
-    def call_function(name, args):
-        if name == "get_weather":
-            return get_weather(**args)
-        if name == "send_email":
-            return send_email(**args)
-
     async def connect_to_server(self, server_script_path: str):
         """Connect to an MCP server
         
@@ -86,23 +80,28 @@ class MCPClient:
             tool_name = tool_call.name
             tool_args = json.loads(tool_call.arguments)
 
-            final_text.append(f"[Calling tool {tool_name} with args {tool_args}]")
+            final_text.append(f"[Calling tool {tool_name} with args {tool_args}] \n")
 
-            result = call_function(tool_name, tool_args)
+            result = await self.session.call_tool(tool_name, tool_args)
 
+            final_text.append(f"{str(result)} \n")
+
+            messages.append(tool_call)
             messages.append({
                 "type": "function_call_output",
                 "call_id": tool_call.call_id,
                 "output": str(result)
             })
 
-            response = self.openai_agent.responses.create(
+            response_natural_text = self.openai_agent.responses.create(
                 model="gpt-4.1",
                 tools=available_tools,
                 input=messages
                 )
+            
+            final_text.append(response_natural_text.output_text)
 
-        return "\n".join(final_text), available_tools, response.output, result
+        return "\n".join(final_text)
 
     async def chat_loop(self):
         """Run an interactive chat loop"""
@@ -118,9 +117,6 @@ class MCPClient:
                     
                 response, available_tools, output, result = await self.process_query(query)
                 print("\n" + response + "\n")
-                #print(available_tools)
-                #print(output)
-                print(result)
 
             except Exception as e:
                 print(f"\nError: {str(e)}")
