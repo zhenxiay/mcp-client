@@ -94,13 +94,13 @@ class MCPClient:
             })
             
            # Final Open AI API call to get the natural language response
-            response = self.openai_agent.responses.create(
-                       model="gpt-4.1",
-                       input=messages,
-                       tools=available_tools,
-                       )
+            #response = self.openai_agent.responses.create(
+            #           model="gpt-4.1",
+            #           input=messages,
+            #           tools=available_tools,
+            #           )
 
-        return "\n".join(final_text), available_tools, response.output
+        return "\n".join(final_text), available_tools, response.output, messages
 
     async def chat_loop(self):
         """Run an interactive chat loop"""
@@ -114,11 +114,12 @@ class MCPClient:
                 if query.lower() == 'quit':
                     break
                     
-                response, available_tools, output = await self.process_query(query)
+                response, available_tools, output, messages = await self.process_query(query)
                 print("\n" + response)
-                print(available_tools)
-                print(output)
-                
+                print("\n" +available_tools)
+                print("\n" +output)
+                print("\n" messages)
+
             except Exception as e:
                 print(f"\nError: {str(e)}")
     
