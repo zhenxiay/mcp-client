@@ -5,8 +5,6 @@ from contextlib import AsyncExitStack
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-
-from anthropic import Anthropic
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -17,8 +15,13 @@ class MCPClient:
         # Initialize session and client objects
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
-        self.anthropic = Anthropic()
         self.openai_agent = OpenAI()
+
+    def call_function(name, args):
+        if name == "get_weather":
+            return get_weather(**args)
+        if name == "send_email":
+            return send_email(**args)
 
     async def connect_to_server(self, server_script_path: str):
         """Connect to an MCP server
@@ -68,10 +71,10 @@ class MCPClient:
 
         # Initial Open AI API call
         response = self.openai_agent.responses.create(
-        model="gpt-4.1",
-        tools=available_tools,
-        input=messages
-        )
+                model="gpt-4.1",
+                tools=available_tools,
+                input=messages
+                )
 
         # Process response and handle tool calls
         final_text = []
@@ -83,24 +86,23 @@ class MCPClient:
             tool_name = tool_call.name
             tool_args = json.loads(tool_call.arguments)
 
-            result = await self.session.call_tool(tool_name, tool_args)
             final_text.append(f"[Calling tool {tool_name} with args {tool_args}]")
-            
-            # Append the tool call to the messages
+
+            result = call_function(tool_name, tool_args)
+
             messages.append({
                 "type": "function_call_output",
                 "call_id": tool_call.call_id,
                 "output": str(result)
             })
-            
-           # Final Open AI API call to get the natural language response
-            #response = self.openai_agent.responses.create(
-            #           model="gpt-4.1",
-            #           input=messages,
-            #           tools=available_tools,
-            #           )
 
-        return "\n".join(final_text), available_tools, response.output, messages
+            response = self.openai_agent.responses.create(
+                model="gpt-4.1",
+                tools=available_tools,
+                input=messages
+                )
+
+        return "\n".join(final_text), available_tools, response.output, result
 
     async def chat_loop(self):
         """Run an interactive chat loop"""
@@ -114,11 +116,11 @@ class MCPClient:
                 if query.lower() == 'quit':
                     break
                     
-                response, available_tools, output, messages = await self.process_query(query)
-                print("\n" + response)
-                print("\n" +available_tools)
-                print("\n" +output)
-                print("\n" messages)
+                response, available_tools, output, result = await self.process_query(query)
+                print("\n" + response + "\n")
+                #print(available_tools)
+                #print(output)
+                print(result)
 
             except Exception as e:
                 print(f"\nError: {str(e)}")
