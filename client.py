@@ -115,7 +115,7 @@ class MCPClient:
                 if query.lower() == 'quit':
                     break
                     
-                response, available_tools, output, result = await self.process_query(query)
+                response = await self.process_query(query)
                 print("\n" + response + "\n")
 
             except Exception as e:
