@@ -6,16 +6,38 @@ from contextlib import AsyncExitStack
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from openai import OpenAI
+import os
+from openai import AzureOpenAI
 from dotenv import load_dotenv
 
 load_dotenv()  # load environment variables from .env
 
+'''
+Define a function to get the Azure OpenAI client.
+'''
+def get_az_openai_client():
+
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
+    api_key=os.getenv("AZURE_OPENAI_API_KEY")
+
+    client = OpenAI(
+        api_key=api_key,  
+        base_url=f"{azure_endpoint}openai/v1/",
+        default_query={"api-version": "preview"}, 
+    )
+    return client
+
 class MCPClient:
-    def __init__(self):
+    def __init__(self, provider: str = "azure"):
         # Initialize session and client objects
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
-        self.openai_agent = OpenAI()
+        self.provider = provider
+        
+        if self.provider.lower() == "azure":
+            self.openai_agent = get_az_openai_client()
+        else: 
+            self.openai_agent = OpenAI()
 
     async def connect_to_server(self, server_script_path: str):
         """Connect to an MCP server
@@ -66,7 +88,7 @@ class MCPClient:
 
         # Initial Open AI API call
         response = self.openai_agent.responses.create(
-                model="gpt-4.1",
+                model="gpt-4o",
                 tools=available_tools,
                 input=messages
                 )
@@ -98,7 +120,7 @@ class MCPClient:
 
             # Get final response from LLM based on the result
             response_natural_text = self.openai_agent.responses.create(
-                model="gpt-4.1",
+                model="gpt-4o",
                 tools=available_tools,
                 input=messages
                 )
@@ -129,12 +151,12 @@ class MCPClient:
         """Clean up resources"""
         await self.exit_stack.aclose()
 
-async def main():
+async def main(provider: str):
     if len(sys.argv) < 2:
         print("Usage: python client.py <path_to_server_script>")
         sys.exit(1)
         
-    client = MCPClient()
+    client = MCPClient(provider=provider)
     try:
         await client.connect_to_server(sys.argv[1])
         await client.chat_loop()
@@ -143,4 +165,4 @@ async def main():
 
 if __name__ == "__main__":
     import sys
-    asyncio.run(main())
+    asyncio.run(main(provider="azure"))
